@@ -1,0 +1,28 @@
+{
+    "name": "midnight/typed-templates",
+    "require": {
+        "php": ">=8.2"
+    },
+    "require-dev": {
+        "ergebnis/composer-normalize": "^2.43",
+        "eventjet/coding-standard": "^3.16",
+        "phpstan/phpstan": "^1.11",
+        "phpunit/phpunit": "^11.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Midnight\\TypedTemplates\\": "src"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Midnight\\TypedTemplates\\Tests\\Functional\\": "tests/functional"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true,
+            "ergebnis/composer-normalize": true
+        }
+    }
+}
