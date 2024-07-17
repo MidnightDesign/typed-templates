@@ -6,6 +6,8 @@ namespace Midnight\TypedTemplates\Parsing;
 
 use Stringable;
 
+use function sprintf;
+
 final readonly class Span implements Stringable
 {
     public function __construct(public Location $start, public Location $end)

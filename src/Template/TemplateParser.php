@@ -5,13 +5,9 @@ declare(strict_types=1);
 namespace Midnight\TypedTemplates\Template;
 
 use Midnight\TypedTemplates\Parsing\Cursor;
-use Midnight\TypedTemplates\Type\AbstractType;
-use Midnight\TypedTemplates\Type\Parser\SyntaxError;
-use Midnight\TypedTemplates\Type\Parser\TypeParser;
+use Midnight\TypedTemplates\Parsing\SyntaxError;
 
-use function array_slice;
-use function explode;
-use function implode;
+use function assert;
 use function is_string;
 use function trim;
 
@@ -21,18 +17,9 @@ final class TemplateParser
     {
     }
 
-    public static function parse(string $input): Template|ParseError
+    public static function parse(string $input): Template|SyntaxError
     {
-        $modelType = TypeParser::parse($input);
-        if ($modelType instanceof AbstractType) {
-            $lines = explode("\n", $input);
-            $lines = array_slice($lines, $modelType->span->end->row);
-            $template = implode("\n", $lines);
-        } else {
-            $template = $input;
-            $modelType = null;
-        }
-        $tokens = new Cursor(Tokenizer::tokenize($template));
+        $tokens = new Cursor(Tokenizer::tokenize($input));
         $parts = [];
         while (true) {
             $token = $tokens->current();
@@ -42,33 +29,46 @@ final class TemplateParser
             $part = match ($token->type) {
                 TokenType::OpenCurly => self::parsePlaceholder($tokens),
                 TokenType::CloseCurly => $token->type->value,
+                TokenType::DoubleOpenCurly => '{',
+                TokenType::DoubleCloseCurly => '}',
                 default => $token->type,
             };
+            if ($part instanceof SyntaxError) {
+                return $part;
+            }
             $tokens->next();
             $parts[] = $part;
         }
-        return new Template($parts, $modelType);
+        return new Template($parts);
     }
 
     /**
      * @param Cursor<Token> $tokens
      */
-    private static function parsePlaceholder(Cursor $tokens): Placeholder
+    private static function parsePlaceholder(Cursor $tokens): Placeholder|SyntaxError
     {
+        $curly = $tokens->current();
+        assert($curly !== null);
+        $curlySpan = $curly->span;
         $tokens->next();
-        $token = $tokens->current();
-        if ($token === null) {
-            return SyntaxError::create('Expected placeholder name', $tokens->current()->span);
+        $nameToken = $tokens->current();
+        if ($nameToken === null) {
+            return SyntaxError::create('Expected placeholder name, got end of input', $curlySpan);
         }
-        if (!is_string($token->type)) {
-            return SyntaxError::create('Expected placeholder name', $tokens->current()->span);
-        }
-        $name = trim($token->type);
-        $tokens->next();
-        if ($tokens->current()->type !== TokenType::CloseCurly) {
-            return SyntaxError::create('Expected "}", got ' . $tokens->current(), $tokens->current()->span);
+        if (!is_string($nameToken->type)) {
+            return SyntaxError::create('Expected placeholder name, got ' . $nameToken->type->value, $nameToken->span);
         }
         $tokens->next();
-        return new Placeholder(trim($name));
+        $closeCurlyToken = $tokens->current();
+        if ($closeCurlyToken === null) {
+            return SyntaxError::create('Expected "}", got end of input', $nameToken->span);
+        }
+        if (is_string($closeCurlyToken->type)) {
+            return SyntaxError::create('Expected "}", got ' . $closeCurlyToken->type, $closeCurlyToken->span);
+        }
+        if ($closeCurlyToken->type !== TokenType::CloseCurly) {
+            return SyntaxError::create('Expected "}", got ' . $closeCurlyToken->type->value, $closeCurlyToken->span);
+        }
+        return new Placeholder(trim($nameToken->type));
     }
 }

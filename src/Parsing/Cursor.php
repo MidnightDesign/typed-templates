@@ -42,7 +42,7 @@ final class Cursor
     }
 
     /**
-     * @return T
+     * @return T | null
      */
     public function next(): mixed
     {

@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace Midnight\TypedTemplates\Template;
 
+use Midnight\TypedTemplates\Parsing\Location;
+use Midnight\TypedTemplates\Parsing\Span;
+
 use function current;
 use function mb_chr;
 use function mb_ord;
@@ -53,15 +56,11 @@ final class Tokenizer
             }
             $line = $this->line;
             $column = $this->column;
-            $token = match ($char) {
-                self::CLOSE_CURLY => Token::closeCurly($line, $column),
-                self::OPEN_CURLY => Token::openCurly($line, $column),
-                default => Token::raw($this->consumeRaw(), $line, $column),
+            yield match ($char) {
+                self::CLOSE_CURLY => $this->closeCurly(),
+                self::OPEN_CURLY => $this->openCurly(),
+                default => $this->raw(),
             };
-            if ($token->type instanceof TokenType) {
-                $this->consume();
-            }
-            yield $token;
         }
     }
 
@@ -88,8 +87,13 @@ final class Tokenizer
         next($this->chars);
     }
 
-    private function consumeRaw(): string
+    /**
+     * @return array{string, Span}
+     */
+    private function consumeRaw(): array
     {
+        $start = new Location($this->line, $this->column);
+        $end = $start;
         $raw = '';
         while (true) {
             $char = $this->peek();
@@ -100,8 +104,39 @@ final class Tokenizer
                 break;
             }
             $raw .= mb_chr($char, self::ENCODING);
+            $end = new Location($this->line, $this->column);
             $this->consume();
         }
-        return $raw;
+        return [$raw, new Span($start, $end)];
+    }
+
+    private function closeCurly(): Token
+    {
+        $line = $this->line;
+        $column = $this->column;
+        $this->consume();
+        if ($this->peek() !== self::CLOSE_CURLY) {
+            return Token::closeCurly($line, $column);
+        }
+        $this->consume();
+        return Token::doubleCloseCurly($line, $column);
+    }
+
+    private function openCurly(): Token
+    {
+        $line = $this->line;
+        $column = $this->column;
+        $this->consume();
+        if ($this->peek() !== self::OPEN_CURLY) {
+            return Token::openCurly($line, $column);
+        }
+        $this->consume();
+        return Token::doubleOpenCurly($line, $column);
+    }
+
+    private function raw(): Token
+    {
+        [$raw, $span] = $this->consumeRaw();
+        return Token::raw($raw, $span);
     }
 }
