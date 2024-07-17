@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Midnight\TypedTemplates\Type\Parser;
 
+use Midnight\TypedTemplates\Parsing\Span;
 use Stringable;
 
 use function is_string;
@@ -12,20 +13,14 @@ final readonly class Token implements Stringable
 {
     /**
      * @param TokenType|string $type Strings are used for identifiers
-     * @param positive-int $line
-     * @param positive-int $column
      */
-    private function __construct(public TokenType|string $type, public int $line, public int $column)
+    private function __construct(public TokenType|string $type, public Span $span)
     {
     }
 
-    /**
-     * @param positive-int $line
-     * @param positive-int $column
-     */
-    public static function identifier(string $name, int $line, int $column): self
+    public static function identifier(string $name, Span $span): self
     {
-        return new self($name, $line, $column);
+        return new self($name, $span);
     }
 
     /**
@@ -34,7 +29,7 @@ final readonly class Token implements Stringable
      */
     public static function openCurly(int $line, int $column): self
     {
-        return new self(TokenType::OpenCurly, $line, $column);
+        return new self(TokenType::OpenCurly, Span::char($line, $column));
     }
 
     /**
@@ -43,7 +38,7 @@ final readonly class Token implements Stringable
      */
     public static function closeCurly(int $line, int $column): self
     {
-        return new self(TokenType::CloseCurly, $line, $column);
+        return new self(TokenType::CloseCurly, Span::char($line, $column));
     }
 
     /**
@@ -52,7 +47,7 @@ final readonly class Token implements Stringable
      */
     public static function colon(int $line, int $column): self
     {
-        return new self(TokenType::Colon, $line, $column);
+        return new self(TokenType::Colon, Span::char($line, $column));
     }
 
     /**
@@ -61,7 +56,7 @@ final readonly class Token implements Stringable
      */
     public static function comma(int $line, int $column): self
     {
-        return new self(TokenType::Comma, $line, $column);
+        return new self(TokenType::Comma, Span::char($line, $column));
     }
 
     /**
@@ -70,7 +65,7 @@ final readonly class Token implements Stringable
      */
     public static function openSquare(int $line, int $column): self
     {
-        return new self(TokenType::OpenSquare, $line, $column);
+        return new self(TokenType::OpenSquare, Span::char($line, $column));
     }
 
     /**
@@ -79,7 +74,7 @@ final readonly class Token implements Stringable
      */
     public static function closeSquare(int $line, int $column): self
     {
-        return new self(TokenType::CloseSquare, $line, $column);
+        return new self(TokenType::CloseSquare, Span::char($line, $column));
     }
 
     public function __toString(): string

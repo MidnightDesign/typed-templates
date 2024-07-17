@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Midnight\TypedTemplates\Type\Parser;
 
+use Midnight\TypedTemplates\Parsing\Cursor;
 use Midnight\TypedTemplates\Type\AbstractType;
 use Midnight\TypedTemplates\Type\ListType;
 use Midnight\TypedTemplates\Type\StringType;
@@ -51,7 +52,7 @@ final class TypeParser
                 return new StructType($fields);
             }
             if (!is_string($token->type)) {
-                return SyntaxError::create(sprintf('Expected identifier, got "%s"', $token), $token->line, $token->column);
+                return SyntaxError::create(sprintf('Expected identifier, got "%s"', $token), $token->span);
             }
             $name = $token->type;
             $token = $tokens->next();
@@ -81,13 +82,9 @@ final class TypeParser
         assert(is_string($token->type));
         if ($token->type === 'string') {
             $tokens->next();
-            return new StringType();
+            return new StringType($token->span);
         }
-        return TypeError::create(
-            sprintf('Unknown type "%s"', $token->type),
-            $token->line,
-            $token->column,
-        );
+        return TypeError::create(sprintf('Unknown type "%s"', $token->type), $token->span);
     }
 
     /**

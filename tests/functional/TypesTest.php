@@ -89,8 +89,8 @@ final class TypesTest extends TestCase
         $parsed = TypeParser::parse($type);
 
         self::assertInstanceOf(ParseError::class, $parsed);
-        self::assertSame($expectedRow, $parsed->row, sprintf('Expected row %d, got %d', $expectedRow, $parsed->row));
-        self::assertSame($expectedColumn, $parsed->column, sprintf('Expected column %d, got %d', $expectedColumn, $parsed->column));
+        self::assertSame($expectedRow, $parsed->span->start->row, sprintf('Expected start row %d, got %d', $expectedRow, $parsed->span->start->row));
+        self::assertSame($expectedColumn, $parsed->span->start->column, sprintf('Expected column %d, got %d', $expectedColumn, $parsed->span->start->column));
         self::assertSame($expectedMessage, $parsed->getMessage());
     }
 }

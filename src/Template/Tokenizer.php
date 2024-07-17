@@ -2,10 +2,7 @@
 
 declare(strict_types=1);
 
-namespace Midnight\TypedTemplates\Type\Parser;
-
-use Midnight\TypedTemplates\Parsing\Location;
-use Midnight\TypedTemplates\Parsing\Span;
+namespace Midnight\TypedTemplates\Template;
 
 use function current;
 use function mb_chr;
@@ -20,19 +17,8 @@ final class Tokenizer
 {
     public const ENCODING = 'UTF-8';
 
-    private const CLOSE_SQUARE = 0x5D;
     private const CLOSE_CURLY = 0x7D;
-    private const COLON = 0x3A;
-    private const COMMA = 0x2C;
-    private const LOWER_A = 0x61;
-    private const LOWER_Z = 0x7A;
-    private const NEWLINE = 0x0A;
-    private const OPEN_SQUARE = 0x5B;
     private const OPEN_CURLY = 0x7B;
-    private const SPACE = 0x20;
-    private const TAB = 0x09;
-    private const UPPER_A = 0x41;
-    private const UPPER_Z = 0x5A;
 
     /** @var positive-int */
     private int $line = 1;
@@ -46,21 +32,13 @@ final class Tokenizer
     {
     }
 
+    /**
+     * @return iterable<Token>
+     */
     public static function tokenize(string $source): iterable
     {
         $chars = mb_str_split($source);
         return (new self($chars))->doLex();
-    }
-
-    private static function isWhitespace(int $char): bool
-    {
-        return $char === self::SPACE || $char === self::TAB || $char === self::NEWLINE;
-    }
-
-    private static function isIdentifierChar(int $char): bool
-    {
-        return ($char >= self::LOWER_A && $char <= self::LOWER_Z)
-            || ($char >= self::UPPER_A && $char <= self::UPPER_Z);
     }
 
     /**
@@ -73,20 +51,12 @@ final class Tokenizer
             if ($char === null) {
                 break;
             }
-            if (self::isWhitespace($char)) {
-                $this->consumeWhitespace();
-                continue;
-            }
             $line = $this->line;
             $column = $this->column;
             $token = match ($char) {
                 self::CLOSE_CURLY => Token::closeCurly($line, $column),
-                self::COLON => Token::colon($line, $column),
-                self::COMMA => Token::comma($line, $column),
                 self::OPEN_CURLY => Token::openCurly($line, $column),
-                self::OPEN_SQUARE => Token::openSquare($line, $column),
-                self::CLOSE_SQUARE => Token::closeSquare($line, $column),
-                default => Token::identifier(...$this->consumeIdentifier()),
+                default => Token::raw($this->consumeRaw(), $line, $column),
             };
             if ($token->type instanceof TokenType) {
                 $this->consume();
@@ -104,17 +74,6 @@ final class Tokenizer
         return mb_ord($char, self::ENCODING);
     }
 
-    private function consumeWhitespace(): void
-    {
-        while (true) {
-            $char = $this->peek();
-            if ($char === null || !self::isWhitespace($char)) {
-                break;
-            }
-            $this->consume();
-        }
-    }
-
     private function consume(): void
     {
         $char = current($this->chars);
@@ -129,26 +88,20 @@ final class Tokenizer
         next($this->chars);
     }
 
-    /**
-     * @return array{string, Span}
-     */
-    private function consumeIdentifier(): array
+    private function consumeRaw(): string
     {
-        $start = new Location($this->line, $this->column);
-        $end = $start;
-        $identifier = '';
+        $raw = '';
         while (true) {
             $char = $this->peek();
             if ($char === null) {
                 break;
             }
-            if (!self::isIdentifierChar($char)) {
+            if ($char === self::OPEN_CURLY || $char === self::CLOSE_CURLY) {
                 break;
             }
-            $identifier .= mb_chr($char, self::ENCODING);
-            $end = new Location($this->line, $this->column);
+            $raw .= mb_chr($char, self::ENCODING);
             $this->consume();
         }
-        return [$identifier, new Span($start, $end)];
+        return $raw;
     }
 }
