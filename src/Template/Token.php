@@ -62,6 +62,16 @@ final readonly class Token implements Stringable
         return new self(TokenType::DoubleOpenCurly, $span);
     }
 
+    /**
+     * @param positive-int $line
+     * @param positive-int $startColumn
+     */
+    public static function listIndicator(int $line, int $startColumn): self
+    {
+        $span = new Span(new Location($line, $startColumn), new Location($line, $startColumn + 1));
+        return new self(TokenType::ListIndicator, $span);
+    }
+
     public function __toString(): string
     {
         return is_string($this->type) ? $this->type : $this->type->value;

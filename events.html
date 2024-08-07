@@ -1,0 +1,12 @@
+<h1>{name}</h1>
+<h2>SKU: {sku}</h2>
+<ul>
+    {Image[]}
+</ul>
+<p>{description}</p>
+<p>Price: {price}</p>
+<form action="/cart" method="post">
+    <input type="hidden" name="sku" value="{sku}">
+    <input type="submit" value="Add to Cart">
+</form>
+

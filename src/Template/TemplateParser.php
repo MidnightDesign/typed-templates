@@ -31,6 +31,7 @@ final class TemplateParser
                 TokenType::CloseCurly => $token->type->value,
                 TokenType::DoubleOpenCurly => '{',
                 TokenType::DoubleCloseCurly => '}',
+                TokenType::ListIndicator => '[]',
                 default => $token->type,
             };
             if ($part instanceof SyntaxError) {
@@ -59,6 +60,16 @@ final class TemplateParser
             return SyntaxError::create('Expected placeholder name, got ' . $nameToken->type->value, $nameToken->span);
         }
         $tokens->next();
+        $listIndicator = $tokens->current();
+        if ($listIndicator === null) {
+            return SyntaxError::create('Expected list indicator or "}", got end of input', $nameToken->span);
+        }
+        $isList = false;
+        if ($listIndicator->type === TokenType::ListIndicator) {
+            $tokens->next();
+            $isList = true;
+        }
+        self::skipWhitespace($tokens);
         $closeCurlyToken = $tokens->current();
         if ($closeCurlyToken === null) {
             return SyntaxError::create('Expected "}", got end of input', $nameToken->span);
@@ -69,6 +80,27 @@ final class TemplateParser
         if ($closeCurlyToken->type !== TokenType::CloseCurly) {
             return SyntaxError::create('Expected "}", got ' . $closeCurlyToken->type->value, $closeCurlyToken->span);
         }
-        return new Placeholder(trim($nameToken->type));
+        $name = trim($nameToken->type);
+        return $isList ? Placeholder::list($name) : Placeholder::create($name);
+    }
+
+    /**
+     * @param Cursor<Token> $tokens
+     */
+    private static function skipWhitespace(Cursor $tokens): void
+    {
+        while (true) {
+            $token = $tokens->current();
+            if ($token === null) {
+                break;
+            }
+            if (!is_string($token->type)) {
+                break;
+            }
+            if (trim($token->type) !== '') {
+                break;
+            }
+            $tokens->next();
+        }
     }
 }

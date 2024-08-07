@@ -1,7 +1,8 @@
 {
     "name": "midnight/typed-templates",
     "require": {
-        "php": ">=8.2"
+        "php": ">=8.2",
+        "nikic/php-parser": "^5.1"
     },
     "require-dev": {
         "ergebnis/composer-normalize": "^2.43",

@@ -6,8 +6,9 @@ namespace Midnight\TypedTemplates\Template;
 
 enum TokenType: string
 {
-    case CloseCurly = '}';
-    case DoubleCloseCurly = '}}';
-    case DoubleOpenCurly = '{{';
     case OpenCurly = '{';
+    case CloseCurly = '}';
+    case DoubleOpenCurly = '{{';
+    case DoubleCloseCurly = '}}';
+    case ListIndicator = '[]';
 }

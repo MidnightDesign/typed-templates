@@ -8,6 +8,7 @@ use Midnight\TypedTemplates\Parsing\Location;
 use Midnight\TypedTemplates\Parsing\Span;
 
 use function current;
+use function in_array;
 use function mb_chr;
 use function mb_ord;
 use function mb_str_split;
@@ -22,6 +23,8 @@ final class Tokenizer
 
     private const CLOSE_CURLY = 0x7D;
     private const OPEN_CURLY = 0x7B;
+    private const OPEN_SQUARE = 0x5B;
+    private const CLOSE_SQUARE = 0x5D;
 
     /** @var positive-int */
     private int $line = 1;
@@ -54,11 +57,10 @@ final class Tokenizer
             if ($char === null) {
                 break;
             }
-            $line = $this->line;
-            $column = $this->column;
             yield match ($char) {
                 self::CLOSE_CURLY => $this->closeCurly(),
                 self::OPEN_CURLY => $this->openCurly(),
+                self::OPEN_SQUARE => $this->openSquare(),
                 default => $this->raw(),
             };
         }
@@ -100,7 +102,7 @@ final class Tokenizer
             if ($char === null) {
                 break;
             }
-            if ($char === self::OPEN_CURLY || $char === self::CLOSE_CURLY) {
+            if (in_array($char, [self::OPEN_CURLY , self::CLOSE_CURLY, self::OPEN_SQUARE, self::CLOSE_SQUARE], true)) {
                 break;
             }
             $raw .= mb_chr($char, self::ENCODING);
@@ -132,6 +134,18 @@ final class Tokenizer
         }
         $this->consume();
         return Token::doubleOpenCurly($line, $column);
+    }
+
+    private function openSquare(): Token
+    {
+        $line = $this->line;
+        $column = $this->column;
+        $this->consume();
+        if ($this->peek() !== self::CLOSE_SQUARE) {
+            return Token::raw('[', Span::char($line, $column));
+        }
+        $this->consume();
+        return Token::listIndicator($this->line, $this->column);
     }
 
     private function raw(): Token
